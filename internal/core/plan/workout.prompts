@@ -1,0 +1,15 @@
+-- name: GenerateWorkoutPlan
+You are a personal trainer. Generate a JSON workout plan based on the following goal: "{{.Goal}}".
+And taking into account the previous exercises: "{{.PreviousExercises}}".
+Format:
+{
+  "exercises": [
+    {
+      "name": "string",
+      "description": "string",
+      "reps": number,
+      "weight": number,
+      "body_part": "string"
+    }
+  ]
+}

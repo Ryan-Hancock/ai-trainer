@@ -1,6 +1,7 @@
 package plan
 
 import (
+	"ai-trainer/internal/adapter/database"
 	"ai-trainer/internal/adapter/hevy"
 	"ai-trainer/internal/adapter/llm"
 	prompts "ai-trainer/internal/utilities/prompt"
@@ -12,11 +13,13 @@ import (
 type Service struct {
 	LLM  llm.Interface
 	Hevy hevy.Interface
+	DB   database.Interface // Add database client
 }
 
 type Config struct {
 	LLM  llm.Interface
 	Hevy hevy.Interface
+	DB   database.Interface // Add database client to config
 }
 
 func NewService(cfg Config) (*Service, error) {
@@ -28,10 +31,11 @@ func NewService(cfg Config) (*Service, error) {
 	return &Service{
 		LLM:  cfg.LLM,
 		Hevy: cfg.Hevy,
+		DB:   cfg.DB, // Initialize database client
 	}, nil
 }
 
-// GenerateWorkoutPlan generates a workout plan based on the user's goal
+// GenerateWorkoutPlan generates a workout plan based on the user's goal and saves it to the database
 func (s *Service) GenerateWorkoutPlan(goal string) (Workout, error) {
 	workouts, err := s.fetchRecentWorkouts(1, 1)
 	if err != nil {
@@ -59,6 +63,17 @@ func (s *Service) GenerateWorkoutPlan(goal string) (Workout, error) {
 	if err != nil {
 		return Workout{}, fmt.Errorf("failed to parse LLM response: %w", err)
 	}
+
+	// Save the generated workout plan to the database
+	workoutPlanJSON, err := json.Marshal(workout)
+	if err != nil {
+		return Workout{}, fmt.Errorf("failed to marshal workout plan: %w", err)
+	}
+	err = s.DB.SaveWorkoutPlan(goal, string(workoutPlanJSON))
+	if err != nil {
+		return Workout{}, fmt.Errorf("failed to save workout plan to database: %w", err)
+	}
+
 	return workout, nil
 }
 

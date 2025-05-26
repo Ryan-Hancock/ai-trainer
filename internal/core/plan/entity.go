@@ -5,9 +5,9 @@ type Workout struct {
 }
 
 type Exercise struct {
-	Name        string
-	Description string
-	Reps        int
-	Weight      float32
-	BodyPart    string
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Reps        int     `json:"reps"`
+	Weight      float32 `json:"weight"`
+	BodyPart    string  `json:"body_part"`
 }

@@ -4,6 +4,7 @@ import (
 	"ai-trainer/internal/adapter/database"
 	"ai-trainer/internal/adapter/hevy"
 	"ai-trainer/internal/adapter/llm"
+	"ai-trainer/internal/core/history" // Import history package
 	"ai-trainer/internal/core/plan"
 	"ai-trainer/internal/service/background"
 	"context"
@@ -50,6 +51,13 @@ func main() {
 		log.Fatalf("Failed to create plan service: %v", err)
 	}
 
+	// Initialize history repository and service
+	historyRepo, err := history.NewSQLiteRepository(dbAdapter)
+	if err != nil {
+		log.Fatalf("Failed to create history repository: %v", err)
+	}
+	historyService := history.NewService(historyRepo, hevyAdapter)
+
 	// Create a context that can be canceled
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -67,6 +75,7 @@ func main() {
 
 	// Add tasks to the background service
 	bgService.AddTask(background.CreateWorkoutPlanTask(planService, "maintain fitness"))
+	bgService.AddTask(background.CreateHevySyncTask(historyService)) // Add Hevy sync task
 	bgService.AddTask(background.CreateWorkoutAnalysisTask(planService))
 	bgService.AddTask(background.CreateNutritionTipTask(planService))
 	bgService.AddTask(background.CreateProgressReportTask(planService))

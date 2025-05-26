@@ -1,31 +1,67 @@
 package main
 
 import (
+	"ai-trainer/internal/adapter/database" // Import database
 	"ai-trainer/internal/adapter/hevy"
 	"ai-trainer/internal/adapter/llm"
+	"ai-trainer/internal/core/history" // Import history service
 	"ai-trainer/internal/core/plan"
+	"context" // Import context
 	"fmt"
+	"log" // Import log for backfill output
 	"os"
 
 	"github.com/manifoldco/promptui"
 )
 
 func main() {
-	hevyAdapter := hevy.NewClient(os.Getenv("HEVYKEY"))
-	llmAdapter := llm.NewClient(os.Getenv("OPENKEY"))
+	hevyAPIKey := os.Getenv("HEVYKEY")
+	openAIKey := os.Getenv("OPENKEY")
+	databasePath := os.Getenv("DATABASE_PATH")
+
+	if hevyAPIKey == "" || openAIKey == "" {
+		fmt.Println("Missing required environment variables. Please set HEVYKEY and OPENKEY.")
+		os.Exit(1)
+	}
+
+	if databasePath == "" {
+		databasePath = "./ai_trainer.db" // Default database path
+		log.Printf("DATABASE_PATH not set, using default: %s", databasePath)
+	}
+
+	// Initialize adapters
+	hevyAdapter := hevy.NewClient(hevyAPIKey)
+	llmAdapter := llm.NewClient(openAIKey)
+	dbAdapter, err := database.NewClient(databasePath)
+	if err != nil {
+		fmt.Printf("Failed to create database client: %v\n", err)
+		os.Exit(1)
+	}
+	defer dbAdapter.Close()
+
+	// Initialize plan service
 	planService, err := plan.NewService(plan.Config{
 		LLM:  llmAdapter,
 		Hevy: hevyAdapter,
+		DB:   dbAdapter,
 	})
 	if err != nil {
 		fmt.Printf("Failed to create plan service: %v\n", err)
-		return
+		os.Exit(1)
 	}
+
+	// Initialize history repository and service
+	historyRepo, err := history.NewSQLiteRepository(dbAdapter)
+	if err != nil {
+		fmt.Printf("Failed to create history repository: %v\n", err)
+		os.Exit(1)
+	}
+	historyService := history.NewService(historyRepo, hevyAdapter)
 
 	for {
 		prompt := promptui.Select{
 			Label: "What would you like to do?",
-			Items: []string{"Generate Workout Plan", "Check-In", "Nutrition Tip", "Quit"},
+			Items: []string{"Generate Workout Plan", "Backfill Hevy Workouts", "Check-In", "Nutrition Tip", "Quit"},
 		}
 
 		_, result, err := prompt.Run()
@@ -38,6 +74,8 @@ func main() {
 		switch result {
 		case "Generate Workout Plan":
 			handleGeneratePlan(planService)
+		case "Backfill Hevy Workouts":
+			handleBackfillHevyWorkouts(historyService)
 		case "Check-In":
 			handleCheckIn()
 		case "Nutrition Tip":
@@ -69,6 +107,17 @@ func handleGeneratePlan(planService *plan.Service) {
 		fmt.Println("  Body Part:", exercise.BodyPart)
 		fmt.Println("  ----------------------")
 	}
+}
+
+func handleBackfillHevyWorkouts(historyService *history.Service) {
+	fmt.Println("Starting Hevy workout history backfill...")
+	ctx := context.Background() // Use a background context for the backfill
+	err := historyService.BackfillAllWorkouts(ctx)
+	if err != nil {
+		fmt.Printf("Error during Hevy workout backfill: %v\n", err)
+		return
+	}
+	fmt.Println("Hevy workout history backfill completed.")
 }
 
 func handleCheckIn() {

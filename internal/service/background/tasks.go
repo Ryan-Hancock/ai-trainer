@@ -1,6 +1,7 @@
 package background
 
 import (
+	"ai-trainer/internal/core/history" // Import history service
 	"ai-trainer/internal/core/plan"
 	"context"
 	"encoding/json"
@@ -34,6 +35,17 @@ func CreateWorkoutPlanTask(planService *plan.Service, goal string) Task {
 			}
 
 			return nil
+		},
+	}
+}
+
+// CreateHevySyncTask creates a task that syncs recent Hevy workouts
+func CreateHevySyncTask(historyService *history.Service) Task {
+	return Task{
+		Name:     "Sync Recent Hevy Workouts",
+		Interval: 6 * time.Hour, // Sync every 6 hours
+		Execute: func(ctx context.Context) error {
+			return historyService.SyncRecentWorkouts(ctx)
 		},
 	}
 }

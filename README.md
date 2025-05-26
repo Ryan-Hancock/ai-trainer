@@ -7,7 +7,7 @@ A personal trainer assistant that runs in the background and integrates with Hev
 This application serves as your personal AI trainer assistant. It runs in the background and periodically performs tasks such as:
 
 - Generating workout plans based on your goals
-- Analyzing your recent workouts from Hevy
+- Syncing your recent workouts from Hevy
 - Providing nutrition tips
 - Creating progress reports
 
@@ -35,6 +35,7 @@ go run cmd/ai-trainer/main.go
 
 This will start the AI Trainer Assistant in the background. It will run various tasks at scheduled intervals:
 - Generate workout plans daily
+- Sync recent Hevy workouts every 6 hours
 - Analyze recent workouts twice daily
 - Provide nutrition tips every 2 days
 - Generate progress reports weekly
@@ -51,6 +52,7 @@ go run cmd/terminal/main.go
 
 This provides a menu-driven interface where you can:
 - Generate workout plans
+- Backfill all Hevy workout history
 - Check in
 - Get nutrition tips
 
@@ -64,6 +66,7 @@ This provides a menu-driven interface where you can:
     - `hevy/` - Hevy API client
     - `llm/` - OpenAI client
   - `core/` - Core business logic
+    - `history/` - Workout history and Hevy integration
     - `plan/` - Workout planning
   - `service/` - Service implementations
     - `background/` - Background service
@@ -82,7 +85,6 @@ bgService := background.NewService(background.Config{
 
 ## Future Enhancements
 
-- Log previous workouts from Hevy
 - Add more sophisticated workout analysis
 - Implement notifications
 - Create a web or mobile interface

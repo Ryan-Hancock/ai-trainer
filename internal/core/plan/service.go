@@ -13,13 +13,13 @@ import (
 type Service struct {
 	LLM  llm.Interface
 	Hevy hevy.Interface
-	DB   database.Interface // Add database client
+	DB   Repoistory
 }
 
 type Config struct {
 	LLM  llm.Interface
 	Hevy hevy.Interface
-	DB   database.Interface // Add database client to config
+	DB   *database.Client
 }
 
 func NewService(cfg Config) (*Service, error) {
@@ -28,10 +28,15 @@ func NewService(cfg Config) (*Service, error) {
 		return nil, fmt.Errorf("failed to load prompts: %w", err)
 	}
 
+	dbClient, err := NewClient(cfg.DB)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create database client: %w", err)
+	}
+
 	return &Service{
 		LLM:  cfg.LLM,
 		Hevy: cfg.Hevy,
-		DB:   cfg.DB, // Initialize database client
+		DB:   dbClient, 
 	}, nil
 }
 

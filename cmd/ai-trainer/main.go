@@ -44,7 +44,7 @@ func main() {
 	planService, err := plan.NewService(plan.Config{
 		LLM:  llmAdapter,
 		Hevy: hevyAdapter,
-		DB:   dbAdapter, // Pass the database client to the plan service
+		DB:   dbAdapter,
 	})
 	if err != nil {
 		log.Fatalf("Failed to create plan service: %v", err)

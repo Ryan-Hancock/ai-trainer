@@ -82,6 +82,7 @@ bgService := background.NewService(background.Config{
 
 ## Future Enhancements
 
+- Log previous workouts from Hevy
 - Add more sophisticated workout analysis
 - Implement notifications
 - Create a web or mobile interface
